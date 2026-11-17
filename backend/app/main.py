@@ -3,6 +3,9 @@ from fastapi import FastAPI
 from datetime import datetime, timezone
 
 from app.routers.auth import router as auth_router
+from app.routers.rooms import router as rooms_router
+from app.routers.equipment import router as equipment_router
+
 
 app = FastAPI(
     title="Lab Booking System API",
@@ -11,6 +14,8 @@ app = FastAPI(
 )
 
 app.include_router(auth_router)
+app.include_router(rooms_router)
+app.include_router(equipment_router)
 
 
 @app.get("/", tags=["Home"])

@@ -1,0 +1,66 @@
+
+name: Lab Booking System CI
+
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: labbooking_test
+          POSTGRES_USER: labbooking
+          POSTGRES_PASSWORD: labbooking_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U labbooking -d labbooking_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: postgresql+psycopg://labbooking:labbooking_test_password@localhost:5432/labbooking_test
+      JWT_SECRET_KEY: github-actions-test-secret-key-change-before-production
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run database migrations
+        run: alembic upgrade head
+
+      - name: Seed test database
+        run: python -m app.seed
+
+      - name: Run pytest
+        run: python -m pytest tests -v
